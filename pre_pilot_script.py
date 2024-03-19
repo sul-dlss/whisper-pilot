@@ -68,11 +68,11 @@ def run_whisper(file, options):
 		end_time = (30 + silences[0]['end_silence'])*1000
 		clip = audio_segment[start_time:end_time]
 		clip.export('cliped_file.wav', format="wav")
-		mel = whisper.log_mel_spectrogram('cliped_file.wav')
+		mel = whisper.log_mel_spectrogram('cliped_file.wav', n_mels=128).to(model.device)
 		os.remove("cliped_file.wav")
 	else:
 		audioclip = whisper.pad_or_trim(audio)
-		mel = whisper.log_mel_spectrogram(audioclip).to(model.device)
+		mel = whisper.log_mel_spectrogram(audioclip, n_mels=128).to(model.device)
 	_, probs = model.detect_language(mel)
 	language = max(probs, key=probs.get)
 	result = whisper.transcribe(audio=audio, model=model, word_timestamps=True, language=language, beam_size=options['beam_size'], patience=options['patience'], condition_on_previous_text=options['condition_on_previous_text'])

@@ -7,7 +7,7 @@ from datetime import datetime
 import jiwer
 import string
 import shlex
-import csv
+import csv, sys
 import logging
 
 logname = 'pre_pilot.log'
@@ -18,6 +18,7 @@ logging.basicConfig(filename=logname,
                     level=logging.ERROR)
 
 whisper_combinations = [{'beam_size': 5, 'patience': 1.0, 'condition_on_previous_text': True}, {'beam_size': 5, 'patience': 1.0, 'condition_on_previous_text': False}, {'beam_size': 5, 'patience': 2.0, 'condition_on_previous_text': True}, {'beam_size': 5, 'patience': 2.0, 'condition_on_previous_text': False}, {'beam_size': 10, 'patience': 1.0, 'condition_on_previous_text': True}, {'beam_size': 10, 'patience': 1.0, 'condition_on_previous_text': False}, {'beam_size': 10, 'patience': 2.0, 'condition_on_previous_text': True}, {'beam_size': 10, 'patience': 2.0, 'condition_on_previous_text': False}]
+preprocessing_combinations = ['afftdn=nr=10:nf=-25:tn=1','afftdn=nr=10:nf=-25:tn=1,volume=4', 'anlmdn,volume=4', 'highpass=200,lowpass=3000,afftdn', 'volume=4', 'speechnorm']
 model = whisper.load_model("large")
 output_dir = 'outputs'
 def run():
@@ -27,19 +28,44 @@ def run():
 		for file in files_with_transcript:
 			for combination in whisper_combinations:
 				start_time = datetime.now()
-				whisper_fields = run_whisper(file, combination)
+				whisper_fields = run_whisper(file, combination, file)
 				fields = {'file': os.path.basename(file), 'duration': get_runtime(start_time)}
 				fields.update(combination)
 				fields.update(whisper_fields)
-				with open(f"{datetime.now().date()}-spreadsheet.csv", mode='a', newline='') as spreadsheet:
-					writer = csv.DictWriter(spreadsheet, fieldnames=fields.keys())
-					if write_headers:
-						writer.writeheader()
-						write_headers = False
-					writer.writerow(fields)
+				csv_filename = f"{datetime.now().date()}-spreadsheet.csv"
+				write_headers = write_rows(write_headers, fields, csv_filename)
 	except Exception as e:
 		logging.error(e)
 
+
+def run_preprocessing():
+	try:
+		write_headers = True
+		files_with_transcript = get_files()
+		for file in files_with_transcript:
+			for combination in preprocessing_combinations:
+				start_time = datetime.now()
+				preprocessed_file = os.path.basename(file).rsplit('.', 1)[0] + '_filter_' + re.sub(r'[^A-Za-z0-9]', '', combination) + '.wav'
+				p = subprocess.Popen(f"ffmpeg -i {file} -af {combination} {preprocessed_file}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+				whisper_fields = run_whisper(preprocessed_file, {'beam_size': 5, 'patience': 1, 'condition_on_previous_text': True}, file)
+				fields = {'file': os.path.basename(file), 'duration': get_runtime(start_time)}
+				fields.update({'ffmpeg filter': combination})
+				fields.update(whisper_fields)
+				os.remove(preprocessed_file)
+				csv_filename = f"{datetime.now().date()}-preprocessing-spreadsheet.csv"
+				write_headers = write_rows(write_headers, fields, csv_filename)
+	except Exception as e:
+		logging.error(e)
+
+
+def write_rows(write_headers, fields, filename):
+	with open(filename, mode='a', newline='') as spreadsheet:
+		writer = csv.DictWriter(spreadsheet, fieldnames=fields.keys())
+		if write_headers:
+			writer.writeheader()
+			write_headers = False
+		writer.writerow(fields)
+	return write_headers
 
 def get_files():
 	folder = '/home/whisper/Documents/pilot-data/bags/*'
@@ -59,7 +85,7 @@ def get_runtime(start_time):
 	minutes, seconds = divmod(remainder, 60)
 	return f"{int(hours)}:{int(minutes)}:{int(seconds)}"
 
-def run_whisper(file, options):
+def run_whisper(file, options, original_file):
 	silences = get_silences(file)
 	audio = whisper.load_audio(file)
 	if len(silences) > 0 and int(silences[0]['start_silence']) == 0:
@@ -80,13 +106,10 @@ def run_whisper(file, options):
 		os.mkdir(output_dir)
 	string_options = "_".join([f"{key}={value}" for key, value in options.items()])
 	output_filename = f"{os.path.basename(file)}-{string_options}.json"
-	print(os.path.join(output_dir, output_filename))
 	with open(os.path.join(output_dir, output_filename), 'w') as f:
 		f.write(json.dumps(result))
-	print(result['text'])
 	hypothesis = clean_text(result['text'])
-	print(file)
-	reference_files = glob.glob(f"{file.rsplit('.', 1)[0].replace('_sl', '')}*script.txt")
+	reference_files = glob.glob(f"{original_file.rsplit('.', 1)[0].replace('_sl', '')}*script.txt")
 	find_file = list(filter(lambda x: '_{}'.format(language) in x, reference_files))
 	reference_file = find_file if len(find_file) > 0 else reference_files
 	reference = clean_text(open(reference_file[0]).read())
@@ -129,5 +152,9 @@ def ffmpegcontentparse(content, field):
 	value_as_float = float(re.sub(r"[^0-9\-.]", '', get_value, 0, re.MULTILINE).strip())
 	return value_as_float
 
-
-run()
+if __name__ == "__main__":
+	input_string = sys.argv[1]
+	if input_string == 'preprocessing':
+		run_preprocessing()
+	else:
+		run()

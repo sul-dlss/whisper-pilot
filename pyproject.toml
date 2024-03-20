@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "whisper-pilot"
+version = "0.1.0"
+description = "Utility for evaluating whisper transcriptions."
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+jiwer = "^3.0.3"
+# installing the latest commit until there is a new release > v20231117
+openai-whisper = {git = "https://github.com/openai/whisper.git", rev = "ba3f3cd54b0e5b8ce1ab3de13e32122d0d5f98ab"}
+pydub = "^0.25.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.1.1"
+black = "^24.3.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff.lint.flake8-annotations]
+ignore-fully-untyped = true

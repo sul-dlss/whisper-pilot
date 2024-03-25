@@ -21,14 +21,13 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt install -y ffmpeg
-        pip install poetry
-        poetry install
+        pip install -r requirements.txt
 
     - name: Style check
       uses: chartboost/ruff-action@v1
 
     - name: Formatting check
-      run: poetry run black --check --diff .
+      run: black --check --diff .
 
     - name: Run tests
-      run: poetry run pytest -v
+      run: pytest -v

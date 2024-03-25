@@ -6,17 +6,24 @@ This repository contains code for testing OpenAI's Whisper for generating transc
 
 ## Run
 
-You'll need to install Poetry to set up the environment:
+You'll probably want a virtual environment:
+
 
 ```
-pipx install poetry
+$ python -m venv env
+$ source env/bin/activate
 ```
 
-And then:
+Then you'll need to install dependencies:
 
 ```
-poetry install
-poetry run report.py
+$ pip install -r requirements.txt
+```
+
+Then you can run the report:
+
+```
+$ ./report.py
 ```
 
 ## Test
@@ -24,5 +31,5 @@ poetry run report.py
 To run the unit tests:
 
 ```
-poetry run pytest
+$ pytest
 ```

@@ -1,4 +1,7 @@
 import report
+import torch
+
+model_size = "large" if torch.cuda.is_available() else "small"
 
 
 def test_get_silences():
@@ -11,10 +14,10 @@ def test_get_silences():
 
 
 def test_get_language():
-    assert report.get_language("test-data/en.wav", "small") == "en"
-    assert report.get_language("test-data/fr.wav", "small") == "fr"
+    assert report.get_language("test-data/en.wav", model_size) == "en"
+    assert report.get_language("test-data/fr.wav", model_size) == "fr"
 
 
 def test_get_language_with_silence():
-    assert report.get_language("test-data/en-with-silence.wav", "small") == "en"
-    assert report.get_language("test-data/fr-with-silence.wav", "small") == "fr"
+    assert report.get_language("test-data/en-with-silence.wav", model_size) == "en"
+    assert report.get_language("test-data/fr-with-silence.wav", model_size) == "fr"

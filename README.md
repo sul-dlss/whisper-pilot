@@ -1,6 +1,6 @@
 # whisper-pilot
  
-[![Build Status](https://github.com/edsu/whisper-pilot/actions/workflows/test.yml/badge.svg)](https://github.com/edsu/whisper-pilot/actions/workflows/test.yml)
+[![Build Status](https://github.com/sul-dlss/whisper-pilot/actions/workflows/test.yml/badge.svg)](https://github.com/sul-dlss/whisper-pilot/actions/workflows/test.yml)
 
 This repository contains code for testing OpenAI's Whisper for generating transcripts from audio and video files.
 

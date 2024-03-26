@@ -2,3 +2,5 @@ openai-whisper
 pydub
 numpy
 jiwer
+pytest
+black

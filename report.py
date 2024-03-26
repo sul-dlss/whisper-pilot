@@ -16,9 +16,8 @@ import jiwer
 import whisper
 from pydub import AudioSegment
 
-logname = "pre_pilot.log"
 logging.basicConfig(
-    filename=logname,
+    filename="report.log",
     filemode="a",
     format="%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s",
     datefmt="%H:%M:%S",
@@ -202,12 +201,9 @@ def run_whisper(file, options, output_dir="outputs"):
         os.mkdir(output_dir)
     string_options = "_".join([f"{key}={value}" for key, value in options.items()])
     output_filename = f"{os.path.basename(file)}-{string_options}.json"
-    print(os.path.join(output_dir, output_filename))
     with open(os.path.join(output_dir, output_filename), "w") as f:
         f.write(json.dumps(result))
-    print(result["text"])
     hypothesis = clean_text(result["text"])
-    print(file)
     reference_files = glob.glob(
         f"{file.rsplit('.', 1)[0].replace('_sl', '')}*script.txt"
     )
@@ -311,8 +307,7 @@ def load_audio(file):
 
 
 if __name__ == "__main__":
-    input_string = sys.argv[1]
-    if input_string == "preprocessing":
+    if len(sys.argv) > 1 and sys.argv[1]  == "preprocessing":
         run_preprocessing()
     else:
         run()

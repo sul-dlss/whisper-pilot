@@ -7,7 +7,6 @@ import re
 import shlex
 import string
 import subprocess
-import sys
 import tempfile
 from datetime import datetime
 from functools import cache
@@ -304,10 +303,3 @@ def load_model(model_name):
 @cache
 def load_audio(file):
     return whisper.load_audio(file)
-
-
-if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "preprocessing":
-        run_preprocessing()
-    else:
-        run()

@@ -1,1 +1,2 @@
-ignore = ["ANN"]
+[lint]
+select = ["E4", "E7", "E9", "F", "I"]

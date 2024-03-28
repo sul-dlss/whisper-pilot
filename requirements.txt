@@ -4,3 +4,5 @@ numpy
 jiwer
 pytest
 black
+boto3
+python-dotenv

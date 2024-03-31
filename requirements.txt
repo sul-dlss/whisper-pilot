@@ -1,8 +1,9 @@
-openai-whisper
-pydub
-numpy
-jiwer
-pytest
 black
 boto3
+jiwer
+numpy
+openai-whisper
+pydub
+pytest
 python-dotenv
+tqdm

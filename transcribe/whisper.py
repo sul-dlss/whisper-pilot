@@ -1,73 +1,65 @@
-import csv
-import glob
 import json
 import logging
 import os
 import re
 import shlex
-import string
 import subprocess
 import tempfile
 from datetime import datetime
 from functools import cache
 
-import jiwer
+import torch
+import tqdm
 import whisper
 from pydub import AudioSegment
 
-logging.basicConfig(
-    filename="report.log",
-    filemode="a",
-    format="%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s",
-    datefmt="%H:%M:%S",
-    level=logging.ERROR,
-)
+from . import utils
 
 whisper_combinations = [
     {
-        "model": "large",
+        "model_name": "large",
         "beam_size": 5,
         "patience": 1.0,
         "condition_on_previous_text": True,
     },
     {
-        "model": "large",
+        "model_name": "large",
         "beam_size": 5,
         "patience": 1.0,
         "condition_on_previous_text": False,
     },
     {
-        "model": "large",
+        "model_name": "large",
         "beam_size": 5,
         "patience": 2.0,
         "condition_on_previous_text": True,
     },
     {
-        "model": "large",
+        "model_name": "large",
         "beam_size": 5,
         "patience": 2.0,
         "condition_on_previous_text": False,
     },
     {
-        "model": "large",
+        "model_name": "large",
         "beam_size": 10,
         "patience": 1.0,
         "condition_on_previous_text": True,
     },
     {
-        "model": "large",
+        "model_name": "large",
         "beam_size": 10,
         "patience": 1.0,
         "condition_on_previous_text": False,
     },
     {
-        "model": "large",
+        "model_name": "large",
         "beam_size": 10,
         "patience": 2.0,
         "condition_on_previous_text": True,
     },
     {
-        "model": "large",
+        "model_name": "large",
         "beam_size": 10,
         "patience": 2.0,
         "condition_on_previous_text": False,
@@ -84,144 +76,96 @@ preprocessing_combinations = [
 ]
 
 
-def run():
-    try:
-        write_headers = True
-        files_with_transcript = get_files()
-        for file in files_with_transcript:
-            for combination in whisper_combinations:
-                start_time = datetime.now()
-                whisper_fields = run_whisper(file, combination)
-                fields = {
-                    "file": os.path.basename(file),
-                    "duration": get_runtime(start_time),
-                }
-                fields.update(combination)
-                fields.update(whisper_fields)
-                with open(
-                    f"{datetime.now().date()}-spreadsheet.csv", mode="a", newline=""
-                ) as spreadsheet:
-                    writer = csv.DictWriter(spreadsheet, fieldnames=fields.keys())
-                    if write_headers:
-                        writer.writeheader()
-                        write_headers = False
-                    writer.writerow(fields)
-    except Exception as e:
-        logging.error(e)
+def run(bags_dir, output_dir):
+    results = []
+    for file in tqdm.tqdm(utils.get_files(bags_dir), desc="whisper"):
+        for combination in tqdm.tqdm(
+            whisper_combinations, desc=" options", leave=False
+        ):
+            result = run_whisper(file, combination, output_dir)
+            logging.info("result: %s", result)
+            results.append(result)
+
+    csv_filename = os.path.join(output_dir, "report-whisper.csv")
+    utils.write_report(results, csv_filename)
 
 
-def run_preprocessing():
-    try:
-        write_headers = True
-        files_with_transcript = get_files()
-        for file in files_with_transcript:
-            for combination in preprocessing_combinations:
-                start_time = datetime.now()
-                preprocessed_file = (
-                    os.path.basename(file).rsplit(".", 1)[0]
-                    + "_filter_"
-                    + re.sub(r"[^A-Za-z0-9]", "", combination)
-                    + ".wav"
-                )
-                subprocess.Popen(
-                    f"ffmpeg -i {file} -af {combination} {preprocessed_file}",
-                    shell=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                ).communicate()
-                whisper_fields = run_whisper(
-                    preprocessed_file,
-                    {"beam_size": 5, "patience": 1, "condition_on_previous_text": True},
-                    file,
-                )
-                fields = {
-                    "file": os.path.basename(file),
-                    "duration": get_runtime(start_time),
-                }
-                fields.update({"ffmpeg filter": combination})
-                fields.update(whisper_fields)
-                os.remove(preprocessed_file)
-                csv_filename = f"{datetime.now().date()}-preprocessing-spreadsheet.csv"
-                write_headers = write_rows(write_headers, fields, csv_filename)
-    except Exception as e:
-        logging.error(e)
+def run_preprocessing(bags_dir, output_dir):
+    results = []
+    for file in tqdm.tqdm(utils.get_files(bags_dir), desc="preprocessing"):
+        for combination in tqdm.tqdm(
+            preprocessing_combinations, desc=" options", leave=False
+        ):
+            logging.info("preprocessing for file %s: %s", file, combination)
+            preprocessed_file = (
+                os.path.basename(file).rsplit(".", 1)[0]
+                + "_filter_"
+                + re.sub(r"[^A-Za-z0-9]", "", combination)
+                + ".wav"
+            )
+            subprocess.Popen(
+                f"ffmpeg -i {file} -af {combination} {preprocessed_file}",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            ).communicate()
+            result = run_whisper(
+                preprocessed_file,
+                {
+                    "model_name": "large",
+                    "beam_size": 5,
+                    "patience": 1,
+                    "condition_on_previous_text": True,
+                },
+                output_dir,
+            )
+            result["ffmpeg filer"] = combination
+            logging.info("result %s", result)
+            results.append(result)
 
+            os.remove(preprocessed_file)
 
-def write_rows(write_headers, fields, filename):
-    with open(filename, mode="a", newline="") as spreadsheet:
-        writer = csv.DictWriter(spreadsheet, fieldnames=fields.keys())
-        if write_headers:
-            writer.writeheader()
-            write_headers = False
-        writer.writerow(fields)
-    return write_headers
-
-
-def get_files():
-    folder = "/home/whisper/Documents/pilot-data/bags/*"
-    files_with_transcript = []
-    folders = glob.glob(folder + os.path.sep)
-    files = [glob.glob("{}data/content/*_sl*.m*".format(folder)) for folder in folders]
-    for folder in files:
-        for file in folder:
-            if (
-                len(
-                    glob.glob(f"{file.rsplit('.', 1)[0].replace('_sl', '')}*script.txt")
-                )
-                > 0
-            ):
-                files_with_transcript.append(file)
-                break
-    return files_with_transcript
-
-
-def get_runtime(start_time):
-    time_difference = datetime.now() - start_time
-    hours, remainder = divmod(time_difference.total_seconds(), 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{int(hours)}:{int(minutes)}:{int(seconds)}"
+    csv_filename = os.path.join(output_dir, "report-whisper-preprocessing.csv")
+    utils.write_report(results, csv_filename)
 
 
 def run_whisper(file, options, output_dir="outputs"):
-    model_name = options["model"]
-    model = load_model(model_name)
-    language = get_language(file, model_name)
-    audio = load_audio(file)
-    result = whisper.transcribe(
-        audio=audio,
-        model=model,
-        word_timestamps=True,
-        language=language,
-        beam_size=options["beam_size"],
-        patience=options["patience"],
-        condition_on_previous_text=options["condition_on_previous_text"],
-    )
-    if os.path.exists(output_dir) is False:
-        os.mkdir(output_dir)
+    start_time = datetime.now()
+    logging.info("running whisper on %s with options %s", file, options)
+    transcription = transcribe(file, options)
+    duration = utils.get_runtime(start_time)
+
     string_options = "_".join([f"{key}={value}" for key, value in options.items()])
     output_filename = f"{os.path.basename(file)}-{string_options}.json"
     with open(os.path.join(output_dir, output_filename), "w") as f:
-        f.write(json.dumps(result))
-    hypothesis = clean_text(result["text"])
-    reference_files = glob.glob(
-        f"{file.rsplit('.', 1)[0].replace('_sl', '')}*script.txt"
-    )
-    find_file = list(filter(lambda x: "_{}".format(language) in x, reference_files))
-    reference_file = find_file if len(find_file) > 0 else reference_files
-    reference = clean_text(open(reference_file[0]).read())
-    output = jiwer.process_words(reference, hypothesis)
-    new_dict = {
-        "wer": output.wer,
-        "mer": output.mer,
-        "wil": output.wil,
-        "wip": output.wip,
-        "hits": output.hits,
-        "substitutions": output.substitutions,
-        "insertions": output.insertions,
-        "deletions": output.deletions,
-    }
-    new_dict["language"] = language
-    return new_dict
+        json.dump(transcription, f, ensure_ascii=False)
+
+    hypothesis = transcription["text"]
+    reference = utils.get_reference(file, transcription["language"])
+
+    result = utils.compare_transcripts(reference, hypothesis)
+    result["language"] = transcription["language"]
+    result["file"] = file
+    result["duration"] = duration
+
+    return result
+
+
+def transcribe(file, options):
+    model = load_model(options["model_name"])
+
+    whisper_options = options.copy()
+    whisper_options.pop("model_name")
+
+    if "language" not in options:
+        whisper_options["language"] = get_language(file, options["model_name"])
+
+    audio = load_audio(file)
+
+    result = whisper.transcribe(audio=audio, model=model, **whisper_options)
+
+    result["text"] = result["text"].strip()
+    return result
 
 
 def get_language(file, model_name):
@@ -245,13 +189,6 @@ def get_language(file, model_name):
     _, probs = model.detect_language(mel)
 
     return max(probs, key=probs.get)
-
-
-def clean_text(text):
-    text = text.replace("\n", " ").replace("  ", " ")
-    text = text.translate(str.maketrans("", "", string.punctuation))
-    text = text.lower()
-    return text
 
 
 def get_silences(file):
@@ -297,7 +234,8 @@ def ffmpegcontentparse(content, field):
 @cache
 def load_model(model_name):
     # cache the response since it takes some time to load
-    return whisper.load_model(model_name)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    return whisper.load_model(model_name, device=device)
 
 
 @cache

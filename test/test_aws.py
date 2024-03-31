@@ -18,3 +18,21 @@ def test_transcript():
         "language": "en-US",
         "transcript": "This is a test for whisper reading in English.",
     }
+
+
+@mark.skipif(NO_AWS, reason="no AWS keys")
+def test_transcript_with_silence():
+    result = aws.transcribe(path.join(TEST_DATA, "en-with-silence.wav"))
+    assert result == {
+        "language": "en-US",
+        "transcript": "This is a test for whisper reading in English.",
+    }
+
+
+@mark.skipif(NO_AWS, reason="no AWS keys")
+def test_transcript_fr():
+    result = aws.transcribe(path.join(TEST_DATA, "fr.wav"))
+    assert result == {
+        "language": "fr-FR",
+        "transcript": "Il s'agit d'un test de lecture de Whisper en français.",
+    }

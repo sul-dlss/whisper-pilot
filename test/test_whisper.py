@@ -31,3 +31,17 @@ def test_get_language_with_silence():
         whisper.get_language(path.join(TEST_DATA, "fr-with-silence.wav"), MODEL_SIZE)
         == "fr"
     )
+
+
+def test_transcribe():
+    t = whisper.transcribe(path.join(TEST_DATA, "en.wav"), {"model_name": MODEL_SIZE})
+
+    assert t["text"] == "This is a test for whisper reading in English."
+    assert t["language"] == "en"
+
+
+def test_transcribe_fr():
+    t = whisper.transcribe(path.join(TEST_DATA, "fr.wav"), {"model_name": MODEL_SIZE})
+
+    assert t["text"] == "Il s'agit d'un test de lecture de whisper en français."
+    assert t["language"] == "fr"

@@ -1,4 +1,7 @@
+import datetime
 import functools
+import json
+import logging
 import os
 import pathlib
 import time
@@ -8,8 +11,36 @@ import boto3
 import botocore
 import dotenv
 import requests
+import tqdm
+
+from . import utils
 
 dotenv.load_dotenv()
+
+
+def run(bags_dir, output_dir):
+    results = []
+    for file in tqdm.tqdm(utils.get_files(bags_dir), desc="aws"):
+        logging.info("transcribing with aws %s", file)
+        start_time = datetime.datetime.now()
+        transcription = transcribe(file)
+        duration = utils.get_runtime(start_time)
+        with open(
+            os.path.join(output_dir, f"{os.path.basename(file)}-aws.json"), "w"
+        ) as fh:
+            json.dump(transcription, fh, ensure_ascii=False)
+
+        reference = utils.get_reference(file, transcription["language"])
+
+        result = utils.compare_transcripts(reference, transcription["transcript"])
+        result["language"] = transcription["language"]
+        result["file"] = file
+        result["duration"] = duration
+        logging.info("result: %s", result)
+        results.append(result)
+
+    csv_filename = os.path.join(output_dir, "report-aws.csv")
+    utils.write_report(results, csv_filename)
 
 
 def transcribe(media_file):

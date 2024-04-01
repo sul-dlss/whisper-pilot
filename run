@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+
+import argparse
+import datetime
+import logging
+import os
+
+from transcribe import aws, google, whisper
+
+parser = argparse.ArgumentParser(
+    prog="run", description="Run transcription generation for sample data"
+)
+
+parser.add_argument("bags_dir", help="Path to SDR bags directory")
+parser.add_argument("--output_dir", help="Path to a directory to write results")
+parser.add_argument(
+    "--only",
+    choices=["whisper", "preprocessing", "aws", "google"],
+    help="Only run one transcription type",
+)
+
+args = parser.parse_args()
+
+if not os.path.isdir(args.bags_dir):
+    parser.error("bags_dir {args.bags_dir} does not exist")
+
+# determine where to write results
+output_dir = args.output_dir
+if output_dir is None:
+    output_dir = datetime.date.today().strftime("output-%Y-%m-%d")
+if not os.path.isdir(output_dir):
+    os.makedirs(output_dir)
+
+logging.basicConfig(
+    filename=os.path.join(output_dir, "transcribe.log"),
+    filemode="a",
+    format="%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s",
+    datefmt="%H:%M:%S",
+    level=logging.INFO,
+)
+
+
+# run one of the transcription types individually or run them all
+if args.only == "whisper":
+    whisper.run(args.bags_dir, output_dir)
+elif args.only == "preprocessing":
+    whisper.run_preprocessing(args.bags_dir, output_dir)
+elif args.only == "aws":
+    aws.run(args.bags_dir, output_dir)
+elif args.only == "google":
+    google.run(args.bags_dir, output_dir)
+else:
+    whisper.run(args.bags_dir, output_dir)
+    whisper.run_preprocessing(args.bags_dir, output_dir)
+    aws.run(args.bags_dir, output_dir)
+    google.run(args.bags_dir, output_dir)

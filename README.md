@@ -23,13 +23,21 @@ $ pip install -r requirements.txt
 Then you can run the report:
 
 ```
-$ ./report.py
+$ ./run.py
 ```
 
 ## Test
 
-To run the unit tests:
+To run the unit tests you should:
 
 ```
 $ pytest
 ```
+
+If you want to run the AWS and Google tests you'll need to:
+
+```
+$ cp env-example .env
+```
+
+And then edit it to add the relevant keys and other platform specific configuration.

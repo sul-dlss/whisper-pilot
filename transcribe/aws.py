@@ -24,7 +24,7 @@ def run(bags_dir, output_dir):
         logging.info("transcribing with aws %s", file)
         start_time = datetime.datetime.now()
         transcription = transcribe(file)
-        duration = utils.get_runtime(start_time)
+        runtime = utils.get_runtime(start_time)
         with open(
             os.path.join(output_dir, f"{os.path.basename(file)}-aws.json"), "w"
         ) as fh:
@@ -34,8 +34,8 @@ def run(bags_dir, output_dir):
 
         result = utils.compare_transcripts(reference, transcription["transcript"])
         result["language"] = transcription["language"]
-        result["file"] = file
-        result["duration"] = duration
+        result["file"] = os.path.basename(file)
+        result["runtime"] = runtime
         logging.info("result: %s", result)
         results.append(result)
 

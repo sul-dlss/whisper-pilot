@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 from datetime import datetime
 from functools import cache
+from itertools import product
 
 import torch
 import tqdm
@@ -15,56 +16,14 @@ from pydub import AudioSegment
 
 from . import utils
 
-whisper_combinations = [
-    {
-        "model_name": "large",
-        "beam_size": 5,
-        "patience": 1.0,
-        "condition_on_previous_text": True,
-    },
-    {
-        "model_name": "large",
-        "beam_size": 5,
-        "patience": 1.0,
-        "condition_on_previous_text": False,
-    },
-    {
-        "model_name": "large",
-        "beam_size": 5,
-        "patience": 2.0,
-        "condition_on_previous_text": True,
-    },
-    {
-        "model_name": "large",
-        "beam_size": 5,
-        "patience": 2.0,
-        "condition_on_previous_text": False,
-    },
-    {
-        "model_name": "large",
-        "beam_size": 10,
-        "patience": 1.0,
-        "condition_on_previous_text": True,
-    },
-    {
-        "model_name": "large",
-        "beam_size": 10,
-        "patience": 1.0,
-        "condition_on_previous_text": False,
-    },
-    {
-        "model_name": "large",
-        "beam_size": 10,
-        "patience": 2.0,
-        "condition_on_previous_text": True,
-    },
-    {
-        "model_name": "large",
-        "beam_size": 10,
-        "patience": 2.0,
-        "condition_on_previous_text": False,
-    },
-]
+# these are whisper options that we want to perturb
+whisper_options = {
+    "model_name": ["large"],
+    "beam_size": [5, 10],
+    "patience": [1.0, 2.0],
+    "condition_on_previous_text": [True, False],
+    "best_of": [5, 10],
+}
 
 preprocessing_combinations = [
     "afftdn=nr=10:nf=-25:tn=1",
@@ -78,11 +37,10 @@ preprocessing_combinations = [
 
 def run(bags_dir, output_dir):
     results = []
+    combinations = list(whisper_option_combinations())
     for file in tqdm.tqdm(utils.get_files(bags_dir), desc="whisper"):
-        for combination in tqdm.tqdm(
-            whisper_combinations, desc=" options", leave=False
-        ):
-            result = run_whisper(file, combination, output_dir)
+        for options in tqdm.tqdm(combinations, desc=" options", leave=False):
+            result = run_whisper(file, options, output_dir)
             logging.info("result: %s", result)
             results.append(result)
 
@@ -126,14 +84,14 @@ def run_preprocessing(bags_dir, output_dir):
             os.remove(preprocessed_file)
 
     csv_filename = os.path.join(output_dir, "report-whisper-preprocessing.csv")
-    utils.write_report(results, csv_filename)
+    utils.write_report(results, csv_filename, extra_cols=["ffmpeg filer"])
 
 
 def run_whisper(file, options, output_dir="outputs"):
     start_time = datetime.now()
     logging.info("running whisper on %s with options %s", file, options)
     transcription = transcribe(file, options)
-    duration = utils.get_runtime(start_time)
+    runtime = utils.get_runtime(start_time)
 
     string_options = "_".join([f"{key}={value}" for key, value in options.items()])
     output_filename = f"{os.path.basename(file)}-{string_options}.json"
@@ -145,8 +103,8 @@ def run_whisper(file, options, output_dir="outputs"):
 
     result = utils.compare_transcripts(reference, hypothesis)
     result["language"] = transcription["language"]
-    result["file"] = file
-    result["duration"] = duration
+    result["file"] = os.path.basename(file)
+    result["runtime"] = runtime
 
     return result
 
@@ -241,3 +199,10 @@ def load_model(model_name):
 @cache
 def load_audio(file):
     return whisper.load_audio(file)
+
+
+def whisper_option_combinations():
+    # generate a list of all possible combinations of the whisper option values
+    for values in product(*whisper_options.values()):
+        # generate a dict using the combination values and the original keys
+        yield dict(zip(whisper_options.keys(), values))

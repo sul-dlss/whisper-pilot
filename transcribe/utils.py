@@ -7,6 +7,20 @@ import string
 
 import jiwer
 
+base_csv_columns = [
+    "file",
+    "language",
+    "runtime",
+    "wer",
+    "mer",
+    "wil",
+    "wip",
+    "hits",
+    "substitutions",
+    "insertions",
+    "deletions",
+]
+
 
 def get_files(bags_dir):
     folder = f"{bags_dir}/*"
@@ -40,15 +54,16 @@ def get_reference(file, language):
 
 
 def get_runtime(start_time):
-    time_difference = datetime.datetime.now() - start_time
-    hours, remainder = divmod(time_difference.total_seconds(), 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{int(hours)}:{int(minutes)}:{int(seconds)}"
+    elapsed = datetime.datetime.now() - start_time
+    return elapsed.total_seconds()
 
 
-def write_report(rows, csv_path):
+def write_report(rows, csv_path, extra_cols=[]):
+    fieldnames = base_csv_columns.copy()
+    if len(extra_cols) > 0:
+        fieldnames.extend(extra_cols)
     with open(csv_path, "w") as fh:
-        writer = csv.DictWriter(fh, fieldnames=rows[0].keys())
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
         writer.writeheader()
         for row in rows:
             writer.writerow(row)

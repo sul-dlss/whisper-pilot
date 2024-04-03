@@ -45,3 +45,15 @@ def test_transcribe_fr():
 
     assert t["text"] == "Il s'agit d'un test de lecture de whisper en français."
     assert t["language"] == "fr"
+
+
+def test_whisper_option_combinations():
+    opts = list(whisper.whisper_option_combinations())
+    assert len(opts) == 16
+    assert {
+        "model_name": "large",
+        "beam_size": 10,
+        "patience": 1.0,
+        "condition_on_previous_text": False,
+        "best_of": 10,
+    } in opts

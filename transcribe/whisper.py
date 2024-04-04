@@ -22,7 +22,7 @@ from . import utils
 #   beam_size: 5
 #   patience: 1
 #   condition_on_previous_text: True
-#   best_of = 5
+#   best_of: 5
 
 whisper_options = {
     "model_name": ["large"],

@@ -16,7 +16,14 @@ from pydub import AudioSegment
 
 from . import utils
 
-# these are whisper options that we want to perturb
+# These are whisper options that we want to perturb. 
+#
+# The defaults are:
+#   beam_size: 5
+#   patience: 1
+#   condition_on_previous_text: True
+#   best_of = 5
+
 whisper_options = {
     "model_name": ["large"],
     "beam_size": [5, 10],
@@ -45,7 +52,7 @@ def run(bags_dir, output_dir):
             results.append(result)
 
     csv_filename = os.path.join(output_dir, "report-whisper.csv")
-    utils.write_report(results, csv_filename)
+    utils.write_report(results, csv_filename, extra_cols=["options"])
 
 
 def run_preprocessing(bags_dir, output_dir):
@@ -105,6 +112,7 @@ def run_whisper(file, options, output_dir="outputs"):
     result["language"] = transcription["language"]
     result["file"] = os.path.basename(file)
     result["runtime"] = runtime
+    result["options"] = string_options
 
     return result
 

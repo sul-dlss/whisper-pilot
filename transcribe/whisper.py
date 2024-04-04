@@ -16,7 +16,7 @@ from pydub import AudioSegment
 
 from . import utils
 
-# These are whisper options that we want to perturb. 
+# These are whisper options that we want to perturb.
 #
 # The defaults are:
 #   beam_size: 5

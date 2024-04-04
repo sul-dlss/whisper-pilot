@@ -59,7 +59,7 @@ And then edit it to add the relevant keys and other platform specific configurat
 
 ## Analysis
 
-There is a Jupyter Notebook that contains some analysis of the results.
+There is a Jupyter [Notebook](https://github.com/sul-dlss/whisper-pilot/blob/main/Notebook.ipynb) that contains some analysis of the results.
 
 ```
 $ jupyter lab Notebook.ipynb

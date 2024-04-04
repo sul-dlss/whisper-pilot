@@ -3,3 +3,4 @@ env
 ENV
 .env
 *.log
+.ipynb_checkpoints/

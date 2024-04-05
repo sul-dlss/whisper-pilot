@@ -6,14 +6,15 @@ TEST_DATA = path.join(path.dirname(__file__), "data")
 
 
 def test_get_files():
-    files = sorted(utils.get_files(path.join(TEST_DATA, "bags")))
-    assert len(files) == 2
+    files = utils.get_files(path.join(TEST_DATA, "bags"))
+    assert len(files) == 3
     assert path.basename(files[0]) == "bb158br2509_sl.m4a"
     assert path.basename(files[1]) == "gj097zq7635_a_sl.m4a"
+    assert path.basename(files[2]) == "gk220dt2833_Ali_Shan_10of10_sl.mp4"
 
 
 def test_get_reference_file():
-    files = sorted(utils.get_files(path.join(TEST_DATA, "bags")))
+    files = utils.get_files(path.join(TEST_DATA, "bags"))
     assert (
         path.basename(utils.get_reference_file(files[0], "en"))
         == "bb158br2509_script.txt"
@@ -21,6 +22,10 @@ def test_get_reference_file():
     assert (
         path.basename(utils.get_reference_file(files[1], "en"))
         == "gj097zq7635_a_sl_script.txt"
+    )
+    assert (
+        path.basename(utils.get_reference_file(files[2], "en"))
+        == "gk220dt2833_Ali_Shan_10of10_sl_script.txt"
     )
 
 

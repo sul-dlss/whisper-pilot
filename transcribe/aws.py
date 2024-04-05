@@ -32,7 +32,7 @@ def run(bags_dir, output_dir):
 
         reference = utils.get_reference(file, transcription["language"])
 
-        result = utils.compare_transcripts(reference, transcription["transcript"])
+        result = utils.compare_transcripts(reference, transcription["text"])
         result["language"] = transcription["language"]
         result["file"] = os.path.basename(file)
         result["runtime"] = runtime
@@ -66,7 +66,7 @@ def transcribe(media_file):
     # return the detected language and the transcript
     return {
         "language": results["results"]["language_code"],
-        "transcript": results["results"]["transcripts"][0]["transcript"],
+        "text": results["results"]["transcripts"][0]["transcript"],
     }
 
 

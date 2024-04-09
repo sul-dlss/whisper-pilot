@@ -23,12 +23,13 @@ base_csv_columns = [
 
 
 def get_files(bags_dir):
+    # TODO: simplify this
     folder = f"{bags_dir}/*"
     files_with_transcript = []
     folders = glob.glob(folder + os.path.sep)
     files = [glob.glob("{}data/content/*_sl*.m*".format(folder)) for folder in folders]
     for folder in files:
-        for file in folder:
+        for file in sorted(folder):
             if (
                 len(
                     glob.glob(f"{file.rsplit('.', 1)[0].replace('_sl', '')}*script.txt")
@@ -37,7 +38,7 @@ def get_files(bags_dir):
             ):
                 files_with_transcript.append(file)
                 break
-    return files_with_transcript
+    return list(sorted(files_with_transcript))
 
 
 def get_reference_file(file, language):
@@ -46,7 +47,7 @@ def get_reference_file(file, language):
     )
     find_file = list(filter(lambda x: "_{}".format(language) in x, reference_files))
     reference_file = find_file if len(find_file) > 0 else reference_files
-    return reference_file[0]
+    return list(sorted(reference_file))[0]
 
 
 def get_reference(file, language):

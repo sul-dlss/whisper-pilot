@@ -11,7 +11,6 @@ parser = argparse.ArgumentParser(
     prog="run", description="Run transcription generation for sample data"
 )
 
-parser.add_argument("bags_dir", help="Path to SDR bags directory")
 parser.add_argument("--output_dir", help="Path to a directory to write results")
 parser.add_argument(
     "--only",
@@ -20,9 +19,6 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-
-if not os.path.isdir(args.bags_dir):
-    parser.error("bags_dir {args.bags_dir} does not exist")
 
 # determine where to write results
 output_dir = args.output_dir
@@ -42,15 +38,15 @@ logging.basicConfig(
 
 # run one of the transcription types individually or run them all
 if args.only == "whisper":
-    whisper.run(args.bags_dir, output_dir)
+    whisper.run(output_dir)
 elif args.only == "preprocessing":
-    whisper.run_preprocessing(args.bags_dir, output_dir)
+    whisper.run_preprocessing(output_dir)
 elif args.only == "aws":
-    aws.run(args.bags_dir, output_dir)
+    aws.run(output_dir)
 elif args.only == "google":
-    google.run(args.bags_dir, output_dir)
+    google.run(output_dir)
 else:
-    whisper.run(args.bags_dir, output_dir)
-    whisper.run_preprocessing(args.bags_dir, output_dir)
-    aws.run(args.bags_dir, output_dir)
-    google.run(args.bags_dir, output_dir)
+    whisper.run(output_dir)
+    whisper.run_preprocessing(output_dir)
+    aws.run(output_dir)
+    google.run(output_dir)

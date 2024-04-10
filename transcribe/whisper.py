@@ -6,7 +6,7 @@ import shlex
 import subprocess
 import tempfile
 from datetime import datetime
-from functools import cache
+from functools import lru_cache
 from itertools import product
 
 import torch
@@ -25,7 +25,7 @@ from . import utils
 #   best_of: 5
 
 whisper_options = {
-    "model_name": ["large"],
+    "model_name": ["medium", "large", "large-v3"],
     "beam_size": [5, 10],
     "patience": [1.0, 2.0],
     "condition_on_previous_text": [True, False],
@@ -42,25 +42,33 @@ preprocessing_combinations = [
 ]
 
 
-def run(bags_dir, output_dir):
-    results = []
+def run(output_dir):
     combinations = list(whisper_option_combinations())
-    for file in tqdm.tqdm(utils.get_files(bags_dir), desc="whisper"):
-        for options in tqdm.tqdm(combinations, desc=" options", leave=False):
-            result = run_whisper(file, options, output_dir)
-            logging.info("result: %s", result)
+    files = utils.get_data_files()
+    total = len(combinations) * len(files)
+    progress = tqdm.tqdm(total=total, desc="whisper".ljust(10))
+
+    results = []
+    for file_metadata in files:
+        for options in combinations:
+            file_metadata["run_count"] = len(results) + 1
+            result = run_whisper(file_metadata, options, output_dir)
             results.append(result)
+            progress.update(1)
 
     csv_filename = os.path.join(output_dir, "report-whisper.csv")
     utils.write_report(results, csv_filename, extra_cols=["options"])
 
 
-def run_preprocessing(bags_dir, output_dir):
+def run_preprocessing(output_dir):
     results = []
-    for file in tqdm.tqdm(utils.get_files(bags_dir), desc="preprocessing"):
-        for combination in tqdm.tqdm(
-            preprocessing_combinations, desc=" options", leave=False
-        ):
+    files = utils.get_data_files()
+    total = len(files) * len(preprocessing_combinations)
+    progress = tqdm.tqdm(total=total, desc="preprocess".ljust(10))
+
+    for file_metadata in files:
+        for combination in preprocessing_combinations:
+            file = file_metadata["media_filename"]
             logging.info("preprocessing for file %s: %s", file, combination)
             preprocessed_file = (
                 os.path.basename(file).rsplit(".", 1)[0]
@@ -75,7 +83,11 @@ def run_preprocessing(bags_dir, output_dir):
                 stderr=subprocess.PIPE,
             ).communicate()
             result = run_whisper(
-                preprocessed_file,
+                {
+                    **file_metadata,
+                    "media_filename": preprocessed_file,
+                    "run_count": len(results) + 1,
+                },
                 {
                     "model_name": "large",
                     "beam_size": 5,
@@ -89,49 +101,46 @@ def run_preprocessing(bags_dir, output_dir):
             results.append(result)
 
             os.remove(preprocessed_file)
+            progress.update(1)
 
     csv_filename = os.path.join(output_dir, "report-whisper-preprocessing.csv")
     utils.write_report(results, csv_filename, extra_cols=["ffmpeg filer"])
 
 
-def run_whisper(file, options, output_dir="outputs"):
+def run_whisper(file_metadata, options, output_dir):
     start_time = datetime.now()
+    file = file_metadata["media_filename"]
     logging.info("running whisper on %s with options %s", file, options)
-    transcription = transcribe(file, options)
+    transcription = transcribe(file_metadata, options)
     runtime = utils.get_runtime(start_time)
 
-    string_options = "_".join([f"{key}={value}" for key, value in options.items()])
-    output_filename = f"{os.path.basename(file)}-{string_options}.json"
-    with open(os.path.join(output_dir, output_filename), "w") as f:
-        json.dump(transcription, f, ensure_ascii=False)
+    result = utils.compare_transcripts(
+        file_metadata, transcription, "whisper", output_dir
+    )
 
-    hypothesis = transcription["text"]
-    reference = utils.get_reference(file, transcription["language"])
-
-    result = utils.compare_transcripts(reference, hypothesis)
-    result["language"] = transcription["language"]
-    result["file"] = os.path.basename(file)
+    result["druid"] = file_metadata["druid"]
+    result["file"] = os.path.basename(file_metadata["media_filename"])
     result["runtime"] = runtime
-    result["options"] = string_options
+    result["options"] = str(options)
 
+    # write out the json results
+    with open(os.path.join(output_dir, f"{result['run_id']}.json"), "w") as fh:
+        json.dump(transcription, fh, ensure_ascii=False)
+
+    logging.info("result: %s", result)
     return result
 
 
-def transcribe(file, options):
+def transcribe(file_metadata, options):
     model = load_model(options["model_name"])
 
     whisper_options = options.copy()
     whisper_options.pop("model_name")
 
-    if "language" not in options:
-        whisper_options["language"] = get_language(file, options["model_name"])
+    whisper_options["language"] = file_metadata["media_language"]
+    audio = load_audio(file_metadata["media_filename"])
 
-    audio = load_audio(file)
-
-    result = whisper.transcribe(audio=audio, model=model, **whisper_options)
-
-    result["text"] = result["text"].strip()
-    return result
+    return whisper.transcribe(audio=audio, model=model, **whisper_options)
 
 
 def get_language(file, model_name):
@@ -197,14 +206,14 @@ def ffmpegcontentparse(content, field):
     return value_as_float
 
 
-@cache
+@lru_cache(maxsize=1)
 def load_model(model_name):
     # cache the response since it takes some time to load
     device = "cuda" if torch.cuda.is_available() else "cpu"
     return whisper.load_model(model_name, device=device)
 
 
-@cache
+@lru_cache(maxsize=1)
 def load_audio(file):
     return whisper.load_audio(file)
 

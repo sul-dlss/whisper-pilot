@@ -18,24 +18,27 @@ from . import utils
 dotenv.load_dotenv()
 
 
-def run(bags_dir, output_dir):
+def run(output_dir):
     results = []
-    for file in tqdm.tqdm(utils.get_files(bags_dir), desc="aws"):
+    for file_metadata in tqdm.tqdm(utils.get_data_files(), desc="aws".ljust(10)):
+        file_metadata["run_count"] = len(results) + 1
+        file = file_metadata["media_filename"]
+
         logging.info("transcribing with aws %s", file)
+
         start_time = datetime.datetime.now()
-        transcription = transcribe(file)
+        transcription = transcribe(file_metadata)
         runtime = utils.get_runtime(start_time)
-        with open(
-            os.path.join(output_dir, f"{os.path.basename(file)}-aws.json"), "w"
-        ) as fh:
+
+        result = utils.compare_transcripts(
+            file_metadata, transcription, "aws", output_dir
+        )
+
+        result["runtime"] = runtime
+
+        with open(os.path.join(output_dir, f"{result['run_id']}.json"), "w") as fh:
             json.dump(transcription, fh, ensure_ascii=False)
 
-        reference = utils.get_reference(file, transcription["language"])
-
-        result = utils.compare_transcripts(reference, transcription["text"])
-        result["language"] = transcription["language"]
-        result["file"] = os.path.basename(file)
-        result["runtime"] = runtime
         logging.info("result: %s", result)
         results.append(result)
 
@@ -43,9 +46,9 @@ def run(bags_dir, output_dir):
     utils.write_report(results, csv_filename)
 
 
-def transcribe(media_file):
+def transcribe(file_metadata):
     # upload media file to a bucket
-    s3_file = upload_file(media_file)
+    s3_file = upload_file(file_metadata["media_filename"])
 
     # create the transcription job
     scribe = get_client("transcribe")
@@ -61,13 +64,8 @@ def transcribe(media_file):
 
     # fetch the results
     url = job["TranscriptionJob"]["Transcript"]["TranscriptFileUri"]
-    results = requests.get(url).json()
 
-    # return the detected language and the transcript
-    return {
-        "language": results["results"]["language_code"],
-        "text": results["results"]["transcripts"][0]["transcript"],
-    }
+    return requests.get(url).json()
 
 
 def upload_file(file):

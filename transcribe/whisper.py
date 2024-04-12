@@ -137,6 +137,14 @@ def transcribe(file_metadata, options):
     whisper_options = options.copy()
     whisper_options.pop("model_name")
 
+    # if the languages of the source media and transcript are different and the
+    # transcript is to be in English then we tell Whisper to translate
+    if (
+        file_metadata["media_language"] != file_metadata["transcript_language"]
+        and file_metadata["transcript_language"] == "en"
+    ):
+        whisper_options["task"] = "translate"
+
     whisper_options["language"] = file_metadata["media_language"]
     audio = load_audio(file_metadata["media_filename"])
 

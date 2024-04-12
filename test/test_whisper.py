@@ -1,10 +1,8 @@
 from os import path
 
-import torch
-
 from transcribe import whisper
 
-MODEL_SIZE = "large" if torch.cuda.is_available() else "small"
+MODEL_SIZE = "small"
 TEST_DATA = path.join(path.dirname(__file__), "data")
 
 
@@ -34,22 +32,30 @@ def test_get_language_with_silence():
 
 
 def test_transcribe():
-    t = whisper.transcribe(path.join(TEST_DATA, "en.wav"), {"model_name": MODEL_SIZE})
+    t = whisper.transcribe(
+        {"media_filename": path.join(TEST_DATA, "en.wav"), "media_language": "en"},
+        {"model_name": MODEL_SIZE},
+    )
 
-    assert t["text"] == "This is a test for whisper reading in English."
+    assert t["segments"][0]["text"] == " This is a test for whisper reading in English."
     assert t["language"] == "en"
 
 
 def test_transcribe_fr():
-    t = whisper.transcribe(path.join(TEST_DATA, "fr.wav"), {"model_name": MODEL_SIZE})
-
-    assert t["text"] == "Il s'agit d'un test de lecture de whisper en français."
+    t = whisper.transcribe(
+        {"media_filename": path.join(TEST_DATA, "fr.wav"), "media_language": "fr"},
+        {"model_name": MODEL_SIZE},
+    )
+    assert (
+        t["segments"][0]["text"]
+        == " Il s'agit d'un test de lecture de whisper en français."
+    )
     assert t["language"] == "fr"
 
 
 def test_whisper_option_combinations():
     opts = list(whisper.whisper_option_combinations())
-    assert len(opts) == 16
+    assert len(opts) == 48
     assert {
         "model_name": "large",
         "beam_size": 10,

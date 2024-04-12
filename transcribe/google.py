@@ -4,34 +4,34 @@ import logging
 import os
 import subprocess
 import tempfile
-from collections import Counter
 
 import tqdm
 from google.api_core.exceptions import NotFound
 from google.cloud import speech, storage
+from google.protobuf.json_format import MessageToDict
 
 from . import utils
 
 
-def run(bags_dir, output_dir):
+def run(output_dir):
     results = []
-    for file in tqdm.tqdm(utils.get_files(bags_dir)):
+    for file_metadata in tqdm.tqdm(utils.get_data_files(), desc="google".ljust(10)):
+        file_metadata["run_count"] = len(results) + 1
+        file = file_metadata["media_filename"]
         logging.info(f"running google speech-to-text with {file}")
 
         start_time = datetime.datetime.now()
-        transcription = transcribe(file)
+        transcription = transcribe(file_metadata)
         runtime = utils.get_runtime(start_time)
 
-        with open(
-            os.path.join(output_dir, f"{os.path.basename(file)}-google.json"), "w"
-        ) as fh:
+        result = utils.compare_transcripts(
+            file_metadata, transcription, "google", output_dir
+        )
+        result["runtime"] = runtime
+
+        with open(os.path.join(output_dir, f"{result['run_id']}.json"), "w") as fh:
             json.dump(transcription, fh, ensure_ascii=False)
 
-        reference = utils.get_reference_file(file, "en")
-        result = utils.compare_transcripts(reference, transcription["text"])
-        result["language"] = transcription["language"]
-        result["file"] = os.path.basename(file)
-        result["runtime"] = runtime
         logging.info(f"result: {result}")
         results.append(result)
 
@@ -39,35 +39,35 @@ def run(bags_dir, output_dir):
     utils.write_report(results, csv_filename)
 
 
-def transcribe(media_file):
+def transcribe(file_metadata):
+    """
+    Sends the media file using Google Speech API, and returns the result as a dict.
+    """
 
     # convert the media file to single channel wav and upload to google cloud
-    wav_file = convert_to_wav(media_file)
+    wav_file = convert_to_wav(file_metadata["media_filename"])
     blob_uri = copy_file(wav_file)
     audio = speech.RecognitionAudio(uri=blob_uri)
 
-    # send the transcription job to google
     logging.info(f"starting speech-to-text job for {wav_file}")
-    config = speech.RecognitionConfig(language_code="en-US", model="latest_long")
+
+    # unlike aws and whisper, google v1 speech API needs to know the language
+    # v2 appears to be different but I couldn't get it to work properly
+    # automatic language detection will be something we want to explore if we
+    # decide to use Google
+
+    language = file_metadata["media_language"]
+    config = speech.RecognitionConfig(language_code=language)
+
+    # send the transcription job to google
     client = speech.SpeechClient()
-    operation = client.long_running_recognize(config=config, audio=audio)
+    operation = client.long_running_recognize(audio=audio, config=config)
     response = operation.result(timeout=60 * 60 * 2)
-
-    # join together all the text chunks in results
-    text = "".join([result.alternatives[0].transcript for result in response.results])
-
-    # get the most common language
-    language = Counter(
-        [result.language_code for result in response.results]
-    ).most_common(1)[0][0]
 
     # remove the temporary wav file
     os.remove(wav_file)
 
-    return {
-        "language": language,
-        "text": text,
-    }
+    return MessageToDict(response._pb)
 
 
 def copy_file(media_file):

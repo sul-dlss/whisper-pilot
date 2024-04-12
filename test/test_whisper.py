@@ -33,7 +33,11 @@ def test_get_language_with_silence():
 
 def test_transcribe():
     t = whisper.transcribe(
-        {"media_filename": path.join(TEST_DATA, "en.wav"), "media_language": "en"},
+        {
+            "media_filename": path.join(TEST_DATA, "en.wav"),
+            "media_language": "en",
+            "transcript_language": "en",
+        },
         {"model_name": MODEL_SIZE},
     )
 
@@ -43,12 +47,32 @@ def test_transcribe():
 
 def test_transcribe_fr():
     t = whisper.transcribe(
-        {"media_filename": path.join(TEST_DATA, "fr.wav"), "media_language": "fr"},
+        {
+            "media_filename": path.join(TEST_DATA, "fr.wav"),
+            "media_language": "fr",
+            "transcript_language": "fr",
+        },
         {"model_name": MODEL_SIZE},
     )
     assert (
         t["segments"][0]["text"]
         == " Il s'agit d'un test de lecture de whisper en français."
+    )
+    assert t["language"] == "fr"
+
+
+def test_translate():
+    t = whisper.transcribe(
+        {
+            "media_filename": path.join(TEST_DATA, "fr.wav"),
+            "media_language": "fr",
+            "transcript_language": "en",
+        },
+        {"model_name": MODEL_SIZE},
+    )
+    assert (
+        t["segments"][0]["text"]
+        == " It's a test of the newspaper of Whisper in French."
     )
     assert t["language"] == "fr"
 

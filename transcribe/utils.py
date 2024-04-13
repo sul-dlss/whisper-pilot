@@ -63,7 +63,7 @@ def compare_transcripts(file, transcript, transcript_type, output_dir):
     run_id = f"{file['druid']}-{transcript_type}-{file['run_count']:03}"
 
     if transcript_type == "google":
-        hypthosis, lang = parse_google(transcript)
+        hypothesis, lang = parse_google(transcript)
     elif transcript_type == "aws":
         hypothesis, lang = parse_aws(transcript)
     elif transcript_type == "whisper":

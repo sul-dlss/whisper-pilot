@@ -1,4 +1,4 @@
 druid,media_filename,media_language,transcript_filename,transcript_language
-qf378nj5000,bags/qf378nj5000/data/content/qf378nj5000_sl.mp4,es,bags/qf378nj5000/data/content/qf378nj5000_script.txt,en
-br525sp8033,bags/br525sp8033/data/content/br525sp8033_FV4289_v4_sl.mp4,ru,bags/br525sp8033/data/content/br525sp8033_FV4289_eng_cap.vtt,en
-br525sp8033,bags/br525sp8033/data/content/br525sp8033_FV4289_v4_sl.mp4,ru,bags/br525sp8033/data/content/br525sp8033_FV4289_rus_cap.vtt,ru
+qf378nj5000,data/qf378nj5000/data/content/qf378nj5000_sl.mp4,es,data/qf378nj5000/data/content/qf378nj5000_script.txt,en
+br525sp8033,data/br525sp8033/data/content/br525sp8033_FV4289_v4_sl.mp4,ru,data/br525sp8033/data/content/br525sp8033_FV4289_eng_cap.vtt,en
+br525sp8033,data/br525sp8033/data/content/br525sp8033_FV4289_v4_sl.mp4,ru,data/br525sp8033/data/content/br525sp8033_FV4289_rus_cap.vtt,ru

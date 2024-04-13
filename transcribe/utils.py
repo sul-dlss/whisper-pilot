@@ -28,10 +28,9 @@ base_csv_columns = [
 ]
 
 
-def get_data_files():
+def get_data_files(manifest):
     rows = []
-    data_csv = Path(__file__).parent.parent / "data.csv"
-    for row in csv.DictReader(open(data_csv)):
+    for row in csv.DictReader(open(manifest)):
         rows.append(row)
     return rows
 

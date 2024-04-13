@@ -4,6 +4,7 @@ import argparse
 import datetime
 import logging
 import os
+import sys
 
 from transcribe import aws, google, whisper
 
@@ -11,7 +12,8 @@ parser = argparse.ArgumentParser(
     prog="run", description="Run transcription generation for sample data"
 )
 
-parser.add_argument("--output_dir", help="Path to a directory to write results")
+parser.add_argument("--output-dir", help="Path to a directory to write results")
+parser.add_argument("--manifest", default="data.csv", help="Path to data manifest CSV")
 parser.add_argument(
     "--only",
     choices=["whisper", "preprocessing", "aws", "google"],
@@ -27,6 +29,10 @@ if output_dir is None:
 if not os.path.isdir(output_dir):
     os.makedirs(output_dir)
 
+# ensure manifest CSV exists
+if not os.path.isfile(args.manifest):
+    sys.exit(f"manifest file {args.manifest} doesn't exist")
+
 logging.basicConfig(
     filename=os.path.join(output_dir, "transcribe.log"),
     filemode="a",
@@ -35,18 +41,20 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-
 # run one of the transcription types individually or run them all
 if args.only == "whisper":
-    whisper.run(output_dir)
+    whisper.run(output_dir, args.manifest)
 elif args.only == "preprocessing":
-    whisper.run_preprocessing(output_dir)
+    whisper.run_preprocessing(output_dir, args.manifest)
 elif args.only == "aws":
-    aws.run(output_dir)
+    aws.run(output_dir, args.manifest)
 elif args.only == "google":
-    google.run(output_dir)
+    google.run(output_dir, args.manifest)
 else:
-    whisper.run(output_dir)
-    whisper.run_preprocessing(output_dir)
-    aws.run(output_dir)
-    google.run(output_dir)
+    whisper.run(output_dir, args.manifest)
+    print()
+    whisper.run_preprocessing(output_dir, args.manifest)
+    print()
+    aws.run(output_dir, args.manifest)
+    print()
+    google.run(output_dir, args.manifest)

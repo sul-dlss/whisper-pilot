@@ -42,9 +42,9 @@ preprocessing_combinations = [
 ]
 
 
-def run(output_dir):
+def run(output_dir, manifest):
     combinations = list(whisper_option_combinations())
-    files = utils.get_data_files()
+    files = utils.get_data_files(manifest)
     total = len(combinations) * len(files)
     progress = tqdm.tqdm(total=total, desc="whisper".ljust(10))
 
@@ -60,9 +60,9 @@ def run(output_dir):
     utils.write_report(results, csv_filename, extra_cols=["options"])
 
 
-def run_preprocessing(output_dir):
+def run_preprocessing(output_dir, manifest):
     results = []
-    files = utils.get_data_files()
+    files = utils.get_data_files(manifest)
     total = len(files) * len(preprocessing_combinations)
     progress = tqdm.tqdm(total=total, desc="preprocess".ljust(10))
 

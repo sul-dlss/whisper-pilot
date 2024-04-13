@@ -18,6 +18,11 @@ def run(output_dir):
     for file_metadata in tqdm.tqdm(utils.get_data_files(), desc="google".ljust(10)):
         file_metadata["run_count"] = len(results) + 1
         file = file_metadata["media_filename"]
+
+        if file_metadata["media_language"] != file_metadata["transcript_language"]:
+            logging.info("skipping since google doesn't support translation")
+            continue
+
         logging.info(f"running google speech-to-text with {file}")
 
         start_time = datetime.datetime.now()

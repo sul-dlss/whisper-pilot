@@ -24,6 +24,10 @@ def run(output_dir):
         file_metadata["run_count"] = len(results) + 1
         file = file_metadata["media_filename"]
 
+        if file_metadata["media_language"] != file_metadata["transcript_language"]:
+            logging.info("skipping since google doesn't support translation")
+            continue
+
         logging.info("transcribing with aws %s", file)
 
         start_time = datetime.datetime.now()

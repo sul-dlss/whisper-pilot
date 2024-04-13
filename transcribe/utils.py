@@ -6,15 +6,16 @@ import re
 import string
 import textwrap
 from collections import Counter
-from pathlib import Path
 
 import jiwer
+import webvtt
 
 base_csv_columns = [
     "run_id",
     "druid",
     "file",
     "language",
+    "transcript_language",
     "runtime",
     "wer",
     "mer",
@@ -70,7 +71,7 @@ def compare_transcripts(file, transcript, transcript_type, output_dir):
     else:
         raise Exception("Unknown transcript type: {transcript_type}")
 
-    reference = open(file["transcript_filename"]).readlines()
+    reference = read_reference_file(file["transcript_filename"])
 
     stats = jiwer.process_words(clean_text(reference), clean_text(hypothesis))
 
@@ -101,6 +102,15 @@ def wrap_lines(lines):
     for line in lines:
         new_lines.extend(textwrap.wrap(line.strip(), width=80))
     return new_lines
+
+
+def read_reference_file(path):
+    if path.endswith(".txt"):
+        return open(path, "r").read().splitlines()
+    elif path.endswith(".vtt"):
+        return [caption.text for caption in webvtt.read(path)]
+    else:
+        raise Exception("Unknown reference transcription type {path}")
 
 
 def write_diff(reference, hypothesis, diff_path):

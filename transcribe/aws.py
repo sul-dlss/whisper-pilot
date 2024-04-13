@@ -20,7 +20,9 @@ dotenv.load_dotenv()
 
 def run(output_dir, manifest):
     results = []
-    for file_metadata in tqdm.tqdm(utils.get_data_files(manifest), desc="aws".ljust(10)):
+    for file_metadata in tqdm.tqdm(
+        utils.get_data_files(manifest), desc="aws".ljust(10)
+    ):
         file_metadata["run_count"] = len(results) + 1
         file = file_metadata["media_filename"]
 

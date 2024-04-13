@@ -20,7 +20,17 @@ rsync -rvhL --times /path/to/export user@example.stanford.edu:pilot-data
 
 The bags should be made available in a `data` directory that you create in the same directory you've cloned this repository to. Alternatively you can symlink the location to `data`
 
-The specific media files and the transcripts that will be used as the gold standard for comparison are in `data.csv`. This file is what drives the process. You will notice that the file paths assume they are relative to the `data` directory. 
+## Manifest
+
+The specific media files and the transcripts that will be used as the gold standard for comparison are in the "manifest" `data.csv`. This file is what determines which files are transcribed, and where the transcription to compare against is. You will notice that the file paths assume they are relative to the `data` directory.
+
+## Whisper Options
+
+The whisper options that are perturbed as part of the run are located in the whisper module:
+
+https://github.com/sul-dlss/whisper-pilot/blob/83292dc8f32bc30a003d0e71362ad12733f66473/transcribe/whisper.py#L27-L33
+
+I guess these could have been command line options or a separate configuration file, but we knew what we wanted to test. This is where to make adjustments if you do want to test additional Whisper options.
 
 ## Setup
 

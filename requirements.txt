@@ -2,15 +2,15 @@ black
 boto3
 google-cloud-speech
 google-cloud-storage
+ipywidgets
 jiwer
 jupyterlab
-jupyterlab
-matplotlib
 matplotlib
 numpy
 openai-whisper
 pandas
 pandas
+plotly
 pydub
 pytest
 python-dotenv

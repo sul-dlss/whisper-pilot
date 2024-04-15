@@ -5,6 +5,7 @@ google-cloud-storage
 ipywidgets
 jiwer
 jupyterlab
+kaleido
 matplotlib
 numpy
 openai-whisper

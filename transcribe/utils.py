@@ -6,6 +6,7 @@ import re
 import string
 import textwrap
 from collections import Counter
+from io import StringIO
 
 import jiwer
 import webvtt
@@ -110,11 +111,22 @@ def read_reference_file(path):
 
 
 def write_diff(reference, hypothesis, diff_path):
-    from_lines = wrap_lines(split_sentences(strip_rev_formatting(reference)))
-    to_lines = wrap_lines(split_sentences(hypothesis))
+    from_lines = split_sentences(strip_rev_formatting(reference))
+    to_lines = split_sentences(hypothesis)
 
-    diff = difflib.HtmlDiff().make_file(from_lines, to_lines, "reference", "transcript")
-    open(diff_path, "w").writelines(diff)
+    diff = difflib.HtmlDiff(wrapcolumn=80)
+    diff = diff.make_file(from_lines, to_lines, "reference", "transcript")
+
+    html = StringIO()
+    html.writelines(diff)
+    html = html.getvalue()
+
+    # TODO: add media player?
+    # <iframe src="https://embed.stanford.edu/iframe?url=https://purl.stanford.edu/bw689yg2740&" height="400px" width="100%" title="Media viewer" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" allowfullscreen="allowfullscreen" allow="clipboard-write"></iframe>
+
+    open(diff_path, "w").write(html)
+
+    return html
 
 
 def parse_google(data):
@@ -185,6 +197,8 @@ def strip_rev_formatting(lines):
 
 
 sentence_endings = re.compile(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s")
+
+
 def split_sentences(lines):
     """
     Split lines with multiple sentences into multiple lines. So,
@@ -196,10 +210,7 @@ def split_sentences(lines):
         To be or not to be.
         That is the question.
     """
+    text = " ".join(lines)
+    sentences = sentence_endings.split(text)
 
-    new_lines = []
-    for line in lines:
-        sentences = sentence_endings.split(line)
-        new_lines.extend(sentences)
-
-    return new_lines
+    return sentences

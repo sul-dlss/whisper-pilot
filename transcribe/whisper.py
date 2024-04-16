@@ -119,7 +119,6 @@ def run_whisper(file_metadata, options, output_dir):
     )
 
     result["druid"] = file_metadata["druid"]
-    result["file"] = os.path.basename(file_metadata["media_filename"])
     result["runtime"] = runtime
     result["options"] = str(options)
 

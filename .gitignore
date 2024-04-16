@@ -4,3 +4,4 @@ ENV
 .env
 *.log
 .ipynb_checkpoints/
+data

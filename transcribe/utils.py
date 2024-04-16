@@ -100,16 +100,9 @@ def compare_transcripts(file, transcript, transcript_type, output_dir):
     }
 
 
-def wrap_lines(lines):
-    new_lines = []
-    for line in lines:
-        new_lines.extend(textwrap.wrap(line.strip(), width=80))
-    return new_lines
-
-
 def read_reference_file(path):
     if path.endswith(".txt"):
-        return open(path, "r").read().splitlines()
+        return open(path, "r", encoding="utf-8-sig").read().splitlines()
     elif path.endswith(".vtt"):
         return [caption.text for caption in webvtt.read(path)]
     else:
@@ -117,8 +110,11 @@ def read_reference_file(path):
 
 
 def write_diff(reference, hypothesis, diff_path):
+    reference = strip_rev_formatting(reference)
+
     from_lines = wrap_lines(reference)
     to_lines = wrap_lines(hypothesis)
+
     diff = difflib.HtmlDiff().make_file(from_lines, to_lines, "reference", "transcript")
     open(diff_path, "w").writelines(diff)
 
@@ -145,7 +141,22 @@ def parse_aws(data):
     return lines, lang
 
 
+def wrap_lines(lines):
+    """
+    Fit text onto lines, which is useful if the text lacks any new lines, as
+    is the case with Google and AWS transcripts. If we were processing VTT
+    files this wouldn't be necessary.
+    """
+    new_lines = []
+    for line in lines:
+        new_lines.extend(textwrap.wrap(line.strip(), width=80))
+    return new_lines
+
+
 def clean_text(lines):
+    """
+    Normalize text for jiwer analysis.
+    """
     text = " ".join(lines)
     text = text.replace("\n", " ")
     text = re.sub(r"  +", " ", text)
@@ -153,3 +164,41 @@ def clean_text(lines):
     text = text.lower()
     text = text.strip()
     return text
+
+
+def strip_rev_formatting(lines):
+    """
+    Remove initial line formatting including optional diarization.
+
+    So:
+
+        - [Interviewer] And how far did you fall?
+
+    would turn into:
+
+        And how far did you fall?
+
+    Also it will split multiple sentences on one line into multiple lines.
+
+        To be or not to be. That is the question.
+
+    will turn into:
+
+        To be or not to be.
+        That is the question.
+
+    """
+
+    sentence_endings = re.compile(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s")
+
+    new_lines = []
+    for line in lines:
+        # remove diarization
+        line = re.sub(r"^- (\[.*?\] )?", "", line)
+
+        # split multiple sentences on one line into multiple lines
+        sentences = sentence_endings.split(line)
+
+        new_lines.extend(sentences)
+
+    return new_lines

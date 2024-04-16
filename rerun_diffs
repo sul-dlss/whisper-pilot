@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+
+"""
+This program will rerun the diff generation using the transcription output that
+is already on disk. You need to tell it where the output is, for example:
+
+    ./rerun_diffs docs/output-2024-04-11/
+"""
+
+import json
+import sys
+from pathlib import Path
+
+import pandas
+
+from transcribe.utils import compare_transcripts
+
+output_dir = Path(sys.argv[1])
+
+# get the list of files
+data = pandas.read_csv("data.csv", index_col="druid")
+
+for transcript_file in output_dir.glob("*.json"):
+    druid, transcript_type, run_count = transcript_file.name.split("-")
+    run_count = int(run_count.replace(".json", ""))
+    transcript = json.load(open(transcript_file))
+
+    # update the file_metadata with things needed for the diff generation
+    file_metadata = dict(data.loc[druid])
+    file_metadata["druid"] = druid
+    file_metadata["run_count"] = run_count
+
+    print(f"rerunning compare_transcript for {transcript_file.name}")
+    compare_transcripts(file_metadata, transcript, transcript_type, output_dir)

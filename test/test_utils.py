@@ -20,6 +20,7 @@ def test_compare_transcripts():
             "druid": druid,
             "media_filename": "en.mp3",
             "transcript_filename": path.join(TEST_DATA, "en.txt"),
+            "transcript_language": "en",
             "run_count": 1,
         }
 
@@ -36,6 +37,9 @@ def test_compare_transcripts():
             "run_id": f"{druid}-whisper-001",
             "druid": druid,
             "file": "en.mp3",
+            "language": "en",
+            "transcript_filename": "en.txt",
+            "transcript_language": "en",
             "wer": 0.1111111111111111,
             "mer": 0.1111111111111111,
             "wil": 0.2098765432098766,
@@ -44,7 +48,6 @@ def test_compare_transcripts():
             "substitutions": 1,
             "insertions": 0,
             "deletions": 0,
-            "language": "en",
             "diff": f"https://sul-dlss.github.io/whisper-pilot/{path.basename(output_dir)}/{druid}-whisper-001.html",
         }
 
@@ -74,3 +77,9 @@ def test_clean_text():
         utils.clean_text(["removes\nall\nnewlines", "from\nall\nlines"])
         == "removes all newlines from all lines"
     )
+
+
+def test_strip_rev_formatting():
+    assert utils.strip_rev_formatting(
+        ["- [interviewer] hi there", "- Yes. Perfect.", "seeya"]
+    ) == ["hi there", "Yes.", "Perfect.", "seeya"]

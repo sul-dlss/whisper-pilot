@@ -210,7 +210,6 @@ def split_sentences(lines):
         To be or not to be.
         That is the question.
     """
-    breakpoint()
     text = " ".join(lines)
     text = text.replace("\n", " ")
     text = re.sub(r' +', ' ', text)

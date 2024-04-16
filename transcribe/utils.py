@@ -124,7 +124,7 @@ def write_diff(druid, reference, hypothesis, diff_path):
     # embed the media player for this item
     html = html.replace(
         "<body>",
-        f'<body>\n\n    <iframe src="https://embed.stanford.edu/iframe?url=https://purl.stanford.edu/{druid}&" height="400px" width="100%" title="Media viewer" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" allowfullscreen="allowfullscreen" allow="clipboard-write"></iframe>\n',
+        f'<body>\n\n    <div style="height: 200px;"><iframe style="position: fixed;" src="https://embed.stanford.edu/iframe?url=https://purl.stanford.edu/{druid}" height="200px" width="100%" title="Media viewer" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" allowfullscreen="allowfullscreen" allow="clipboard-write"></iframe></div>',
     )
 
     # write the diff file

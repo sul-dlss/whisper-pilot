@@ -88,5 +88,5 @@ def test_strip_rev_formatting():
 
 def test_split_sentences():
     assert utils.split_sentences(
-        ["This is a test? This is another test... Onwards."]
-    ) == ["This is a test?", "This is another test...", "Onwards."]
+        ["Hiya.\n This is a test? This is another test... Onwards.\n", ""]
+    ) == ["Hiya.", "This is a test?", "This is another test...", "Onwards."]

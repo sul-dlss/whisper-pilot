@@ -210,7 +210,12 @@ def split_sentences(lines):
         To be or not to be.
         That is the question.
     """
+    breakpoint()
     text = " ".join(lines)
-    sentences = sentence_endings.split(text)
+    text = text.replace("\n", " ")
+    text = re.sub(r' +', ' ', text)
+    sentences = sentence_endings.split(text.strip())
+    sentences = [sentence.strip() for sentence in sentences]
+    #sentences = list(filter(lambda s: s != "", sentences))
 
     return sentences

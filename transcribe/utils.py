@@ -80,7 +80,7 @@ def compare_transcripts(file, transcript, transcript_type, output_dir):
     diff_file = f"{run_id}.html"
     diff_url = f"https://sul-dlss.github.io/whisper-pilot/{os.path.basename(output_dir)}/{diff_file}"
     diff_path = os.path.join(output_dir, diff_file)
-    write_diff(reference, hypothesis, diff_path)
+    write_diff(file["druid"], reference, hypothesis, diff_path)
 
     return {
         "run_id": run_id,
@@ -110,7 +110,7 @@ def read_reference_file(path):
         raise Exception("Unknown reference transcription type {path}")
 
 
-def write_diff(reference, hypothesis, diff_path):
+def write_diff(druid, reference, hypothesis, diff_path):
     from_lines = split_sentences(strip_rev_formatting(reference))
     to_lines = split_sentences(hypothesis)
 
@@ -121,9 +121,13 @@ def write_diff(reference, hypothesis, diff_path):
     html.writelines(diff)
     html = html.getvalue()
 
-    # TODO: add media player?
-    # <iframe src="https://embed.stanford.edu/iframe?url=https://purl.stanford.edu/bw689yg2740&" height="400px" width="100%" title="Media viewer" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" allowfullscreen="allowfullscreen" allow="clipboard-write"></iframe>
+    # embed the media player for this item
+    html = html.replace(
+        "<body>",
+        f'<body>\n\n    <iframe src="https://embed.stanford.edu/iframe?url=https://purl.stanford.edu/{druid}&" height="400px" width="100%" title="Media viewer" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" allowfullscreen="allowfullscreen" allow="clipboard-write"></iframe>\n',
+    )
 
+    # write the diff file
     open(diff_path, "w").write(html)
 
     return html
@@ -212,9 +216,8 @@ def split_sentences(lines):
     """
     text = " ".join(lines)
     text = text.replace("\n", " ")
-    text = re.sub(r' +', ' ', text)
+    text = re.sub(r" +", " ", text)
     sentences = sentence_endings.split(text.strip())
     sentences = [sentence.strip() for sentence in sentences]
-    #sentences = list(filter(lambda s: s != "", sentences))
 
     return sentences

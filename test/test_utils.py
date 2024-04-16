@@ -81,5 +81,8 @@ def test_clean_text():
 
 def test_strip_rev_formatting():
     assert utils.strip_rev_formatting(
-        ["- [interviewer] hi there", "- Yes. Perfect.", "seeya"]
-    ) == ["hi there", "Yes.", "Perfect.", "seeya"]
+        ["- [interviewer] hi there", "seeya"]
+    ) == ["hi there", "seeya"]
+
+def test_split_sentences():
+    assert utils.split_sentences(["This is a test? This is another test... Onwards."]) == ["This is a test?", "This is another test...", "Onwards."]

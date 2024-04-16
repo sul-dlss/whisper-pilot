@@ -110,10 +110,8 @@ def read_reference_file(path):
 
 
 def write_diff(reference, hypothesis, diff_path):
-    reference = strip_rev_formatting(reference)
-
-    from_lines = wrap_lines(reference)
-    to_lines = wrap_lines(hypothesis)
+    from_lines = wrap_lines(split_sentences(strip_rev_formatting(reference)))
+    to_lines = wrap_lines(split_sentences(hypothesis))
 
     diff = difflib.HtmlDiff().make_file(from_lines, to_lines, "reference", "transcript")
     open(diff_path, "w").writelines(diff)
@@ -177,28 +175,31 @@ def strip_rev_formatting(lines):
     would turn into:
 
         And how far did you fall?
+    """
+    new_lines = []
+    for line in lines:
+        line = re.sub(r"^- (\[.*?\] )?", "", line)
+        new_lines.append(line)
 
-    Also it will split multiple sentences on one line into multiple lines.
+    return new_lines
+
+
+sentence_endings = re.compile(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s")
+def split_sentences(lines):
+    """
+    Split lines with multiple sentences into multiple lines. So,
 
         To be or not to be. That is the question.
 
-    will turn into:
+    would become:
 
         To be or not to be.
         That is the question.
-
     """
-
-    sentence_endings = re.compile(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s")
 
     new_lines = []
     for line in lines:
-        # remove diarization
-        line = re.sub(r"^- (\[.*?\] )?", "", line)
-
-        # split multiple sentences on one line into multiple lines
         sentences = sentence_endings.split(line)
-
         new_lines.extend(sentences)
 
     return new_lines

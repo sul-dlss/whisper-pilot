@@ -85,8 +85,14 @@ And then edit it to add the relevant keys and other platform specific configurat
 
 ## Analysis
 
-There is a Jupyter [Notebook](https://github.com/sul-dlss/whisper-pilot/blob/main/Notebook.ipynb) that contains some analysis of the results.
+There are some Jupyter notebooks in the `notebooks` directory which you can view here on Github.
+
+* [Caption Providers](https://github.com/sul-dlss/whisper-pilot/blob/main/notebooks/caption-providers.ipynb): an analysis of Word Error Rates for Whisper, Google Speech and Amazon Transcribe.
+* [On Prem Estimate](https://github.com/sul-dlss/whisper-pilot/blob/main/notebooks/on-prem-estimate.ipynb): an estimate of how long it will take to run our backlog through Whisper using hardware similar to the RDS GPU work station.
+* [Whisper Options](https://github.com/sul-dlss/whisper-pilot/blob/main/notebooks/whisper-options.ipynb) examining the effects of adjusting several Whisper options.
+
+If you want to interact with them you'll need to run Jupyter Lab which was installed with the dependencies:
 
 ```
-$ jupyter lab Notebook.ipynb
+$ jupyter lab
 ```

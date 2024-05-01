@@ -8,7 +8,7 @@ TEST_DATA = path.join(path.dirname(__file__), "data")
 
 def test_get_data_files():
     files = utils.get_data_files("data.csv")
-    assert len(files) == 11
+    assert len(files) == 13
     assert path.basename(files[0]["media_filename"]) == "bb158br2509_sl.m4a"
 
 

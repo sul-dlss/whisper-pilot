@@ -15,7 +15,7 @@ The items were exported as BagIt directories from SDR preservation using the [SD
 So assuming SDR-GET exported the bags to `/path/to/export` and you want rsync just the low service copies to `example.stanford.edu` you can:
 
 ```
-rsync -rvhL --times /path/to/export user@example.stanford.edu:pilot-data
+rsync -rvhL --times --include "*/" --include "*.mp4" --include "*.m4a" --include "*.txt" --exclude "*" /path/to/export user@example.stanford.edu:pilot-data
 ```
 
 The bags should be made available in a `data` directory that you create in the same directory you've cloned this repository to. Alternatively you can symlink the location to `data`
@@ -53,6 +53,14 @@ Install dependencies:
 $ pip install -r requirements.txt
 ```
 
+To run the AWS and Google tests you'll need to:
+
+```
+$ cp env-example .env
+```
+
+And then edit it to add the relevant keys and other platform specific configuration.
+
 ## Run
 
 Then you can run the report:
@@ -74,14 +82,6 @@ To run the unit tests you should:
 ```
 $ pytest
 ```
-
-If you want to run the AWS and Google tests you'll need to:
-
-```
-$ cp env-example .env
-```
-
-And then edit it to add the relevant keys and other platform specific configuration.
 
 ## Analysis
 
